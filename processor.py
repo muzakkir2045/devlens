@@ -7,7 +7,7 @@ data = get_repo_files()
 
 CODE_EXTENSIONS = ['.py', '.js', '.ts', '.html', '.css', '.md', '.json', '.yml', '.yaml', '.txt', '.jsx', '.tsx']
 
-languages = {
+EXTENSION_MAP = {
     '.py':'Python',
     '.js':'JavaScript',
     '.ts' : 'Typescript',
@@ -17,55 +17,65 @@ languages = {
     '.tsx' : 'React - TS'
 
 }
-
+FRAMEWORK_MAP = {
+    'requirements.txt': 'Flask/Python project',
+    'package.json':     'Node.js project',
+    'manage.py':        'Django',
+    'pom.xml':          'Java/Maven',
+    'Dockerfile':       'Docker',
+}
 
 def file_map():
     path_content = {}
     for d in data['files']:
         path_content[d['path']] = d['content']
-    
     return path_content
 
-new = file_map()
 
-for path,content in new.items():
-    pass
+def detect_languages():
+    languages = set()
+    for path in file_map().keys():
+        ext = os.path.splitext(path)[1]
+        if ext in EXTENSION_MAP:
+            languages.add(EXTENSION_MAP[ext])
+    return languages if languages else None
+
+has_tests = any('test' in path.lower() for path in file_map().keys())
+
+def framework():
+
+    frameworks = []
+    for path in file_map().keys():
+        fwk = os.path.basename(path)
+        if fwk in FRAMEWORK_MAP:
+            frameworks.append(FRAMEWORK_MAP[fwk])
+    return frameworks if frameworks else None
+
+
+
+
 
 def entry():
     target_files = {'app.py','main.py','index.js'}
-    data = file_map()
-    entry_points = []
-    for key in data.keys():
-        file_name = os.path.basename(key)
-        if file_name in target_files:
-            entry_points.append(key)
-    else:
-        if entry_points == []:
-            return None
-    return entry_points
+    entry_points = [
+        key for key in file_map().keys()
+        if os.path.basename(key) in target_files
+    ]
+    return entry_points if entry_points else None
 
 
 def config():
     target_files = {'requirements.txt','config.yaml','config.json'}
-    data = file_map()
-    config_files = []
-    for key in data.keys():
-        file_name = os.path.basename(key)
-        if file_name in target_files:
-            config_files.append(key)
-    else:
-        if config_files == []:
-            return None
-    return config_files
-
-for path in file_map().keys():
-    file_name = path.split('/')[-1]
-
-    if file_name == 'README.md':
-        readme = path
-    else:
-        readme = None
+    config_files = [
+        key for key in file_map().keys()
+        if os.path.basename(key) in target_files
+    ]
+    return config_files if config_files else None
 
 
-# print(f"The entry files are : {entry()}")
-# print(f"The config files are : {config()}")
+def find_readme():
+    for path in file_map().keys():
+        if path.split('/')[-1] == 'README.md':
+            return path
+    return None
+
